@@ -1,20 +1,52 @@
 let operatorArray = [undefined, undefined, undefined];
 
-function initializeButtons (){
+function initializeButtons(){
     let buttons = document.querySelectorAll('button');
-    buttons.forEach(button => button.addEventListener('click', e => dispatch(e)));
+    buttons.forEach(button => button.addEventListener('click', e => dispatch(e, 'button')));
 };
+
+function mapKeys(e){
+    let key = e.key;
+    switch(e.key){
+        case 'Backspace':
+            key = 'Del';
+            break;
+        case 'Delete':
+            key = 'Del';
+            break;
+        case 'c':
+            key = 'C';
+            break;
+        case 'Enter':
+            key = '=';
+            break;
+        case '/':
+            key = 'div';
+            break;
+        case '*':
+            key = 'mul';
+            break;
+        case '-':
+            key = 'sub';
+            break;
+        case '+':
+            key = 'add';
+            break;
+    }
+
+    dispatch(key, 'key');
+}
 
 function updateDisplay(value){
     document.querySelector("#display > p").textContent = value;
 }
 
 function appendNum(display, num){
-    if (isNaN(display) && display != ''){
+    if (isNaN(display) && display != '' && display != 'Error! Dividing by 0 is dumb.'){
         operatorArray[1] = display;
         updateDisplay(num);
     }
-    else if (display == ''){
+    else if (display == '' || display == 'Error! Dividing by 0 is dumb.'){
         updateDisplay(num);
     }
     else {
@@ -23,21 +55,30 @@ function appendNum(display, num){
 }
 
 function updateOperator(display, operator){
-    if (isNaN(display)){
+    if (isNaN(display) && display != '' && display != 'Error! Dividing by 0 is dumb.'){
         updateDisplay(operator);
     }
-    else {
+    else if (operatorArray[1] == undefined && display != '' && display != 'Error! Dividing by 0 is dumb.'){
         operatorArray[0] = +display;
+        updateDisplay(operator);
+    }
+    else if (operatorArray[0] != undefined && operatorArray[1] != undefined && display != '' && display != 'Error! Dividing by 0 is dumb.') {
+        operatorArray[2] = +display;
+        operate();
         updateDisplay(operator);
     }
 }
 
-function dispatch (e){
-    let pressed = e.target.id;
+function dispatch (e, type){
+    let code;
+    if (type == 'button'){
+        code = e.target.id;
+    }
+    else if (type == 'key'){
+        code = e;
+    }
     let display = document.querySelector('#display > p').textContent;
-    switch (pressed){
-        case '%':
-            break;
+    switch (code){
         case 'CE':
             updateDisplay('');
             break;
@@ -46,13 +87,7 @@ function dispatch (e){
             operatorArray = [undefined, undefined, undefined];
             break;
         case 'Del':
-            updateDisplay(display.slice(0, display.length-2));
-            break;
-        case 'x_inv':
-            break;
-        case 'x^2':
-            break;
-        case 'sqrt':
+            updateDisplay(display.slice(0, display.length-1));
             break;
         case 'div':
             updateOperator(display, '/');
@@ -94,20 +129,28 @@ function dispatch (e){
             updateOperator(display, '+');
             break;
         case 'neg':
+            if (!isNaN(display) && display[0] != '-'){
+                updateDisplay(`-${display}`);
+            }
+            else if (!isNaN(display) && display[0] == '-'){
+                updateDisplay(display.slice(1,display.length-1));
+            }
             break;
         case '0':
             appendNum(display, '0');
             break;
         case '.':
-            if (isNaN(display)){
-                appendNum(display, '0.');
-            }
-            else{
-                appendNum(display, '.');
+            if (!display.includes('.')){
+                if (isNaN(display)){
+                    appendNum(display, '0.');
+                }
+                else{
+                    appendNum(display, '.');
+                }
             }
             break;
         case '=':
-            if (!isNaN(display) && operatorArray[2] == undefined){
+            if (!isNaN(display) && operatorArray[2] == undefined && operatorArray[1] != undefined){
                 operatorArray[2] = +display;
                 operate();
             }
@@ -127,8 +170,11 @@ function mul(a, b){
     return a * b;
 }
 
-//Implement a check to make sure no /0
 function div(a, b){
+    if (b == 0){
+        operatorArray = [undefined, undefined, undefined];
+        return 'div0';
+    }
     return a / b;
 }
 
@@ -149,7 +195,11 @@ function operate(){
             break;
     }
     updateDisplay(result);
+    if (result == 'div0'){
+        updateDisplay('Error! Dividing by 0 is dumb.');
+    }
     operatorArray = [result, undefined, undefined];
 }
 
 initializeButtons();
+window.addEventListener('keydown', mapKeys);
